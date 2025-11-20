@@ -1,8 +1,16 @@
 ---
-title: "Proyecto-Modulo8-Spotify"
-author: "Dream Team"
+title: "Análisis de Popularidad en Spotify"
+author: 'Equipo: Dream Team'
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: flatly
+    highlight: tango
+    code_folding: "hide"
+    smooth_scroll: true
 ---
 
 ```{r setup, include=FALSE}
@@ -16,7 +24,18 @@ library(dplyr)
 library(tidyr)
 ```
 
-## 1. Análisis de popularidad de canciones en Spotify
+# Proyecto_ Popularidad de canciones en Spotify
+
+**Integrantes**
+
+- Candelas Juárez Diego
+- Domínguez Sánchez Oscar
+- Lira González Rosa Linda.
+- Ochoa Campos Ana Sofía
+- Pérez Rojas Alberto
+
+
+# Análisis de popularidad de canciones en Spotify
 
 En este documento se presenta un análisis exploratorio de un conjunto de datos de Spotify que contiene información detallada por pista: nombre de la canción,artistas, popularidad y distintas características musicales (audio features),así como un género asignado a cada canción.
 
@@ -28,9 +47,9 @@ El objetivo de esta primera etapa es:
 - Identificar patrones musicales asociados a canciones más populares.
 - Explorar una segmentación por clusters basada en características de audio.
 
-### 1.1 Descripción general y limpieza de datos
+## Descripción general y limpieza de datos
 
-#### Cargar datos originales
+### Cargar datos originales
 
 ```{r}
 spotify_raw <- readr::read_csv("dataset.csv")
@@ -38,21 +57,21 @@ spotify_raw <- readr::read_csv("dataset.csv")
 glimpse(spotify_raw)
 ```
 
-#### Limpieza básica de nombres
+### Limpieza básica de nombres
 
 ```{r nombres, echo=TRUE}
 spotify <- spotify_raw %>%
 clean_names()
 ```
 
-#### Eliminar columnas índice típicas si existen
+### Eliminar columnas índice típicas si existen
 
 ```{r eliminar_columnas, echo=TRUE}
 spotify <- spotify %>%
 select(-matches("^unnamed_0$|^x1$"), everything())
 ```
 
-#### Renombrar columnas clave
+### Renombrar columnas clave
 
 ```{r columnas_claves, echo=TRUE}
 spotify <- spotify %>%
@@ -62,7 +81,7 @@ genre       = track_genre
 )
 ```
 
-#### Eliminar filas sin información clave
+### Eliminar filas sin información clave
 
 ```{r eliminar_filas, echo=TRUE}
 campos_clave <- c("track_id", "artist_name", "track_name", "popularity")
@@ -72,7 +91,7 @@ spotify <- spotify %>%
 drop_na(all_of(campos_clave_presentes))
 ```
 
-#### Eliminar duplicados por track_id + track_name
+### Eliminar duplicados por track_id + track_name
 
 ```{r eliminar_duplicados, echo=TRUE}
 claves_dup <- intersect(names(spotify), c("track_id", "track_name"))
@@ -86,7 +105,7 @@ distinct(track_id, .keep_all = TRUE)
 }
 ```
 
-#### Crear duración en minutos si existe duration_ms
+### Crear duración en minutos si existe duration_ms
 
 ```{r duracion, echo=TRUE}
 if ("duration_ms" %in% names(spotify)) {
@@ -95,7 +114,7 @@ mutate(duration_min = duration_ms / 60000)
 }
 ```
 
-#### Convertir popularidad a numérico por seguridad
+### Convertir popularidad a numérico por seguridad
 
 ```{r}
 spotify <- spotify %>%
@@ -118,6 +137,7 @@ El archivo original contiene alrededor de 114 mil registros.Tras la depuración:
 El dataset resultante contiene decenas de miles de canciones y alrededor de 20 variables útiles para el análisis.
 
 Para tener una primera referencia de la popularidad:
+
 ```{r}
 summary(spotify$popularity)
 ```
@@ -135,7 +155,7 @@ Por lo tanto:
 
 El análisis se centrará en patrones musicales (audio features), artistas y géneros, dejando el estudio temporal/geográfico como trabajo futuro.
 
-### 1.2 Distribución de la popularidad
+## Distribución de la popularidad
 
 ```{r}
 ggplot(spotify, aes(x = popularity)) +
@@ -175,7 +195,7 @@ En esta versión se aprecia que:
 
 Esto sugiere un catálogo con muchos temas de éxito medio y un grupo reducido de verdaderos “hits”, acompañado de un bloque importante de música casi invisible (popularidad 0).
 
-### 1.3 Distribución de la duración
+## Distribución de la duración
 
 ```{r}
 if ("duration_min" %in% names(spotify)) {
@@ -191,6 +211,7 @@ y = "Frecuencia"
 )
 }
 ```
+
 La mayor parte de las canciones:
 
 - Se encuentra entre 3 y 4.5 minutos.
@@ -199,7 +220,7 @@ La mayor parte de las canciones:
 
 Esto es consistente con el formato típico de “sencillo” comercial, pensado para escucha rápida y repetible.
 
-### 1.4 Artistas con mayor popularidad promedio
+## Artistas con mayor popularidad promedio
 
 En esta sección se estudia la popularidad a nivel de artista. Cuando hay colaboraciones, éstas aparecen en la columna artists separadas por punto y coma (Artista A; Artista B), por lo que primero se separan:
 
@@ -243,15 +264,16 @@ y = "Artista"
 )
 
 ```
+
 **Insight:** Los artistas mejor posicionados combinan:una *popularidad promedio alta, y un catálogo con un número considerable de canciones*.
 
 Es decir, no dependen únicamente de uno o dos éxitos aislados, sino que mantienen un nivel de desempeño consistente en varias pistas.
 
-### 1.5 Factores musicales asociados al éxito
+## Factores musicales asociados al éxito
 
 En esta sección se exploran las relaciones entre popularity y las principales características de audio provistas por Spotify: `danceability, energy,loudness, acousticness, instrumentalness, valence, tempo, speechiness, liveness y duration_min.`
 
-#### Correlaciones de Pearson
+### Correlaciones de Pearson
 
 ```{r}
 vars_audio <- c("popularity", "danceability", "energy", "loudness",
@@ -266,6 +288,7 @@ cor(use = "complete.obs")
 
 round(mat_cor["popularity", ], 3)
 ```
+
 También se puede visualizar de forma conjunta:
 
 ```{r}
@@ -276,6 +299,7 @@ title = "Matriz de correlaciones entre popularidad y audio features",
 progress = FALSE
 )
 ```
+
 De forma general se observa que:
 
 - `loudness` y `danceability` tienden a correlacionar de forma positiva con la popularidad.
@@ -284,7 +308,7 @@ De forma general se observa que:
 
 Las magnitudes no son muy altas, lo que indica que el éxito no depende sólo de la forma de la señal de audio.
 
-#### Comparación por deciles de popularidad
+### Comparación por deciles de popularidad
 
 ```{r}
 spotify_deciles <- spotify %>%
@@ -311,7 +335,7 @@ Al comparar el decil más bajo vs. el más alto de popularidad se suele observar
 - Presentan mayor loudness (más intensas en volumen),
 - Tienden a ser menos acústicas y menos instrumentales, y, en promedio, tienen una duración ligeramente menor.
 
-### 1.6 Diferencias por meta-género
+## Diferencias por meta-género
 
 La columna genre contiene una gran cantidad de subgéneros específicos.Para simplificar el análisis se agrupan en cuatro meta-géneros:
 
@@ -347,7 +371,8 @@ TRUE ~ "Other"
 spotify %>%
 count(meta_genre, name = "n_canciones")
 ```
-#### Popularidad Promedio por meta-género
+
+### Popularidad Promedio por meta-género
 
 ```{r}
 meta_summary <- spotify %>%
@@ -374,12 +399,13 @@ y = "Popularidad promedio"
 theme(legend.position = "none")
 
 ```
+
 En general:
 
 - **Pop** y **Hip-hop** suelen concentrar las mayores popularidades promedio.
 - **Rock** y, especialmente, **Other** corresponden más a escenas de nicho.
 
-#### Contenido explícito por meta-género
+###Contenido explícito por meta-género
 
 ```{r}
 if ("explicit" %in% names(spotify)) {
@@ -414,11 +440,12 @@ theme(legend.position = "none")
 }
 
 ```
+
 - El **Hip-hop** concentra la mayor proporción de canciones explícitas.
 - El **Pop** alcanza altos niveles de popularidad con contenido explícito muy bajo.
 - El grupo **Other** tiene un porcentaje intermedio de pistas explícitas.
 
-#### Segmentación mediante *Clustering* (K-Means)
+### Segmentación mediante *Clustering* (K-Means)
 
 Para identificar “familias sonoras” más allá de las etiquetas de género, se aplica *K-means con K = 4* sobre un subconjunto de audio features.
 
@@ -427,7 +454,7 @@ que canciones de géneros diferentes pueden compartir un mismo “tipo” de son
 
 Por esta razón, se implementa una **segmentación no supervisada** mediante *K-means*, cuyo objetivo es agrupar canciones exclusivamente con base en sus características acústicas y estructurales, permitiendo descubrir “familias sonoras” que representan estilos de producción reales utilizados en las recomendaciones musicales, los algoritmos de playlists y los sistemas de descubrimiento dentro de Spotify.
 
-#### ¿Por qué K-means?
+### ¿Por qué K-means?
 
 K-means es uno de los métodos más utilizados para:
 
@@ -437,7 +464,7 @@ K-means es uno de los métodos más utilizados para:
 
 En este caso permite agrupar canciones según audio features como energía, bailabilidad o intensidad acústica, ofreciendo una visión alternativa más centrada en el **perfil sonoro real** que en la definición de género.
 
-#### ¿Por qué usar estas variables?
+### ¿Por qué usar estas variables?
 
 Se eligieron características que representan:
 
@@ -450,7 +477,7 @@ Se eligieron características que representan:
 
 Estas variables permiten capturar dimensiones fundamentales del sonido: energía, organicidad, nivel de producción, emoción y estructura musical.
 
-#### ¿Por qué K = 4?
+### ¿Por qué K = 4?
 
 Aunque existen múltiples técnicas para elegir el número óptimo de clusters (elbow method, silhouette score), se selecciona **K = 4** porque:
 
@@ -530,6 +557,7 @@ cluster_meta
 ```
 
 **Clusters en el plano danceability–energy**
+
 ```{r}
 spotify %>%
 ggplot(aes(x = danceability, y = energy, color = factor(cluster_k4))) +
@@ -543,6 +571,7 @@ color = "Cluster"
 )
 
 ```
+
 **Clusters en el plano loudness–acousticness**
 
 ```{r}
@@ -577,7 +606,8 @@ y = "Energy promedio",
 color = "Cluster"
 )
 ```
-#### ¿Qué aporta al análisis?
+
+### ¿Qué aporta al análisis?
 
 Este enfoque permite:
 
@@ -589,7 +619,7 @@ Este enfoque permite:
 
 En síntesis, el clustering complementa al análisis de géneros mostrando que, en plataformas modernas, el “tipo de sonido” o *sound profile* es tan importante como la etiqueta de género para explicar patrones de reproducción y preferencias del usuario.
 
-### 1.7 Problemas encontrados y lecciones
+## Problemas encontrados y lecciones
 
 Durante el análisis se identificaron varios retos de datos:
 
@@ -599,7 +629,7 @@ Durante el análisis se identificaron varios retos de datos:
 - Necesidad de agrupar subgéneros para hacer manejable el análisis.
 - Estos puntos orientan mejoras futuras en la recolección y preparación de datos.
 
-### 1.8 Resumen de insights clave
+## Resumen de insights clave
 
 Algunos hallazgos centrales del EDA son:
 
@@ -609,7 +639,7 @@ Algunos hallazgos centrales del EDA son:
 - **Contenido explícito concentrado:** el Hip-hop presenta la mayor proporción de etiquetas explícitas, mientras que el Pop logra altos niveles de éxito con muy poco contenido de este tipo.
 -**Familias sonoras más allá del género:** el clustering revela cuatro grupos de canciones con perfiles acústicos bien diferenciados, lo que sugiere que el “tipo de sonido” (energía, mood, intensidad) es tan relevante como la etiqueta de género en la forma en que se consume música en plataformas de streaming.
 
-# 2. Modelo predictivo: Estimación de la popularidad a partir de características acústicas
+# Modelo predictivo: Estimación de la popularidad a partir de características acústicas
 
 Después de realizar el análisis exploratorio de datos (EDA), surge una pregunta central para este proyecto: **¿es posible predecir el nivel de popularidad de una canción únicamente a partir de sus características musicales?**
 
@@ -656,7 +686,7 @@ Para ello se implementarán dos modelos:
 
 El rendimiento de ambos modelos se evaluará mediante métricas estándar como RMSE, MAE y R², y se analizarán las variables que más contribuyen a las predicciones.
 
-### 2.1 Preparación del dataset para el modelado
+## Preparación del dataset para el modelado
 
 Antes de entrenar cualquier modelo predictivo es necesario preparar el conjunto de datos para asegurar que las características utilizadas sean consistentes, comparables y apropiadas para los algoritmos seleccionados.
 
@@ -700,7 +730,8 @@ test  <- model_data[-train_idx, ]
 dim(train)
 dim(test)
 ```
-### 2.2 Modelo base: Regresión lineal múltiple
+
+## Modelo base: Regresión lineal múltiple
 
 La regresión lineal múltiple es uno de los modelos más utilizados como punto de partida en tareas de predicción. Su propósito es evaluar si existe una relación lineal entre un conjunto de variables explicativas (en este caso, las características acústicas) y una variable objetivo (la popularidad).
 
@@ -733,7 +764,7 @@ mae_lm
 r2_lm
 ```
 
-#### Interpretación del modelo lineal
+### Interpretación del modelo lineal
 
 El modelo de regresión lineal múltiple muestra resultados estadísticamente significativos, pero con una capacidad predictiva muy limitada. Algunas variables presentan relaciones esperadas:
 
@@ -746,7 +777,7 @@ Aunque varios coeficientes son significativos, el desempeño global del modelo e
 
 En conjunto, el modelo lineal funciona adecuadamente como **baseline**, pero sus limitaciones justifican el uso de un modelo no lineal más robusto, capaz de capturar interacciones complejas entre variables acústicas.
 
-### 2.3 Modelo no lineal: Random Forest
+## Modelo no lineal: Random Forest
 
 Dado que el modelo lineal mostró un desempeño limitado, resulta necesario emplear un método capaz de capturar relaciones no lineales y potenciales interacciones entre características acústicas. En este sentido, el algoritmo **Random Forest** es una alternativa particularmente adecuada, ya que combina múltiples árboles de decisión entrenados sobre subconjuntos aleatorios de datos y variables para generar predicciones más robustas y estables.
 
@@ -792,6 +823,7 @@ r2_rf
 ```{r importance-rf, echo=TRUE}
 varImpPlot(mod_rf, main = "Importancia de variables (Random Forest)")
 ```
+
 El modelo Random Forest muestra una mejora muy significativa respecto al modelo de regresión lineal. Mientras que el modelo lineal sólo lograba explicar alrededor del 3% de la variabilidad en la popularidad, el Random Forest alcanza un **R² de 0.249 (24.9%)**, lo cual representa una mejora de más de ocho veces en capacidad explicativa. Esta cifra es notablemente alta si se considera que la popularidad 
 musical depende en gran medida de factores externos al audio —como la visibilidad del artista, campañas de marketing, presencia en playlists editoriales o viralidad en redes sociales— elementos que no están presentes en el dataset.
 
@@ -801,7 +833,7 @@ Este desempeño confirma que las características acústicas contienen una fracc
 
 Aun así, con un 75% de la variabilidad sin explicar, los resultados dejan claro que el éxito musical depende de otros factores sociales, culturales y comerciales que trascienden las propiedades del audio. En síntesis, el Random Forest demuestra que el sonido sí aporta información útil para predecir la popularidad, pero está lejos de ser el único elemento determinante.
 
-### 2.4 Modelo adicional: XGBoost
+## Modelo adicional: XGBoost
 
 Como extensión del análisis, se incorpora un modelo basado en **Gradient Boosting** utilizando la librería **XGBoost**. Este tipo de modelo es uno de los enfoques más utilizados y competitivos en problemas de predicción sobre datos tabulares, 
 debido a su capacidad para:
@@ -880,7 +912,8 @@ print(importance_xgb)
 
 xgb.plot.importance(importance_xgb, top_n = 10, main = "Importancia de variables (XGBoost)")
 ```
-### Comparación de modelos
+
+## Comparación de modelos
 
 ```{r comparamodelos, echo=TRUE}
 resumen_modelos <- tibble::tibble(
@@ -909,11 +942,11 @@ Entre ellos, el **Random Forest obtiene el mejor equilibrio** entre error y capa
 El modelo XGBoost, incluso tras ajustar hiperparámetros como `max_depth`, `eta`, `subsample` y `colsample_bytree`, no logra superar de manera consistente al Random Forest. Esto sugiere que el límite actual de desempeño no está en el algoritmo, sino en la cantidad de información que las características acústicas pueden aportar sobre la popularidad. En otras palabras, **los modelos ya están capturando casi toda la señal disponible en estas variables**, y el resto de la variabilidad se debe a factores externos al audio (artista, marketing, playlists editoriales, viralidad, etc.) que no están incluidos en el dataset.
 
 
-# 3. Conclusiones
+# Conclusiones
 
 El análisis realizado permite comprender de manera integral cómo se comporta la popularidad de las canciones en Spotify desde una perspectiva basada en características musicales internas. Si bien el éxito comercial depende de múltiples factores externos (como el artista, el marketing o las playlists editoriales), este estudio demuestra que las propiedades acústicas influyen en una fracción significativa del desempeño de una canción dentro de la plataforma.
 
-## 3.1 Conclusiones del EDA
+## Conclusiones del EDA
 
 El análisis exploratorio reveló varios patrones relevantes:
 
@@ -929,7 +962,7 @@ El análisis exploratorio reveló varios patrones relevantes:
 
 Estas observaciones confirman que, aunque el género y el artista influyen fuertemente en la popularidad, **las características acústicas también reflejan patrones estructurales relevantes**.
 
-## 3.2 Conclusiones del modelo predictivo
+## Conclusiones del modelo predictivo
 
 Se evaluaron tres enfoques: regresión lineal, Random Forest y XGBoost.
 
@@ -941,7 +974,7 @@ Se evaluaron tres enfoques: regresión lineal, Random Forest y XGBoost.
 
 En términos prácticos, los modelos permiten concluir que las propiedades del audio **aportan información valiosa pero limitada**, explicando entre una cuarta y una quinta parte del éxito de una canción. El resto depende de factores externos no incluidos en el dataset.
 
-## 3.3 Limitaciones del estudio
+## Limitaciones del estudio
 
 Este análisis presenta varias limitaciones importantes:
 
@@ -953,7 +986,7 @@ Este análisis presenta varias limitaciones importantes:
 
 - Los modelos predictivos se construyen únicamente con variables acústicas, lo cual limita su capacidad explicativa.
 
-## 3.4 Líneas de trabajo futuro
+## Líneas de trabajo futuro
 
 Para mejorar la capacidad predictiva y la riqueza del análisis, sería deseable:
 
