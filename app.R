@@ -5,12 +5,12 @@ library(randomForest)
 library(DT)
 
 # ============================================================================
-# CARGAR Y PREPARAR DATOS (OPTIMIZADO)
+# CARGAR Y PREPARAR DATOS 
 # ============================================================================
 
 spotify_raw <- read_csv("dataset.csv", show_col_types = FALSE)
 
-# REDUCIR TAMAÑO: Tomar una muestra representativa si el dataset es muy grande
+#  Se tomar una muestra representativa.
 if (nrow(spotify_raw) > 50000) {
   set.seed(123)
   spotify_raw <- spotify_raw %>% 
@@ -32,7 +32,6 @@ spotify <- spotify_raw %>%
     duration_min = duration_ms / 60000
   )
 
-# Crear meta-géneros
 genres_pop <- c("cantopop", "indie-pop", "j-pop", "k-pop", "mandopop", 
                 "pop", "pop-film", "power-pop", "synth-pop")
 genres_rock <- c("alt-rock", "hard-rock", "j-rock", "psych-rock",
@@ -51,7 +50,7 @@ spotify <- spotify %>%
   )
 
 # ============================================================================
-# ENTRENAR MODELO PREDICTIVO (OPTIMIZADO)
+# ENTRENAR MODELO PREDICTIVO 
 # ============================================================================
 
 vars_modelo <- c("popularity", "danceability", "energy", "loudness",
@@ -62,7 +61,7 @@ model_data <- spotify %>%
   select(all_of(vars_modelo)) %>%
   drop_na()
 
-# Usar muestra más pequeña para entrenamiento (más rápido)
+# Usar muestra más pequeña para entrenamiento.
 set.seed(123)
 if (nrow(model_data) > 20000) {
   train_sample <- sample_n(model_data, 20000)
@@ -74,11 +73,11 @@ train_idx <- sample(seq_len(nrow(train_sample)), size = 0.7 * nrow(train_sample)
 train <- train_sample[train_idx, ]
 test <- train_sample[-train_idx, ]
 
-# Entrenar Random Forest con MENOS árboles (más rápido)
+# Entrenar random forest con menos árboles.
 mod_rf <- randomForest(
   popularity ~ .,
   data = train,
-  ntree = 100,        # Reducido de 200 a 100
+  ntree = 100,        
   mtry = 3,
   importance = TRUE
 )
@@ -246,7 +245,7 @@ ui <- fluidPage(
 )
 
 # ============================================================================
-# SERVIDOR (LÓGICA REACTIVA)
+# SERVIDOR
 # ============================================================================
 
 server <- function(input, output, session) {
